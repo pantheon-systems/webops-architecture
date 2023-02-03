@@ -1,4 +1,4 @@
-B# Basic workflows on Pantheon
+# Basic workflows on Pantheon
 
 ## Ongoing changes in Dev environment only
 
