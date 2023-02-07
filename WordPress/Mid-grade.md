@@ -128,17 +128,17 @@ title: Deployment Journey
 journey
     section Develop new features
         Code new feature in local environment: 1: Developer
-        Create PR into Custom Upstream: 2: Developer, Custom Upstream, GitHub
-        Update WP core to latest version: 1: Pantheon Upstream, Custom Upstream
+        Create PR into Custom Upstream: 2: Developer, GitHub
+        Update WP core to latest version: 1: GitHub
         Code new feature just for Site 2: 2: Developer, Pantheon
 
     section Test features
-        Merge PR into Custom Upstream: 3: Developer, Custom Upstream, GitHub
+        Merge PR into Custom Upstream: 3: Developer, GitHub
         Deploy changes to Canary Site: 4: Developer, GitHub, Pantheon
-        Test Canary site: 4: Tester, Pantheon
+        Test Canary site: 4: Pantheon, Tester
 
     section Deploy features to live site
         Deploy changes to Sites 1, 2: 4:  Developer, GitHub, Pantheon
-        Merge changes into Test on Sites 1, 2: 5: Tester, Pantheon
-        Merge changes into Live on Sites 1, 2: 5: Tester, Pantheon
+        Merge changes into Test on Sites 1, 2: 5: Pantheon, Tester
+        Merge changes into Live on Sites 1, 2: 5: Pantheon, Tester
 ```
