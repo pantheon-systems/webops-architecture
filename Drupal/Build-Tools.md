@@ -1,19 +1,17 @@
-# Foundational codebase with compiled assets
+# Build Tools
 
 Ideal for teams that
 
-- have a lot of team members
-- run a number of related, but not identical websites
-- require high levels of governance over their sites
+- manage a single site or sites without much code overlap
 - are doing advanced or cutting edge technologies
 - do a lot of testing of their codebase
 
 Major elements of this setup
 
-- Foundational codebase including core modules, themes, and configuration
-- Can be used for many, many sites (scaling to the hundreds)
-- The foundational codebase supports a full testing suite and a frontend build process
-- The site repos can add additional modules, themes, and configuration on top of the foundation
+- Supports a single site
+- Has a CI step that can run complex testing & frontend build steps
+- Uses a powerful library with a lot of workflow automations with Build Tools
+- The Pantheon repo should be ignored. It's just an archive for the build artifact that CI generates.
 
 ```mermaid
 ---
