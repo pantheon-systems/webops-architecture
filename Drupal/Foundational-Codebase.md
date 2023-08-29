@@ -14,6 +14,8 @@ Major elements of this setup
 - Can be used for many, many sites (scaling to the hundreds)
 - The foundational codebase supports a full testing suite and a frontend build process
 - The site repos can add additional modules, themes, and configuration on top of the foundation
+- If the sites need a frontend build step, that build must be done locally and have the compiled assets committed locally & pushed to Pantheon
+- Terminus Build Tools workflow commands are generally incompatible
 
 ```mermaid
 ---
