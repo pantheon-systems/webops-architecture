@@ -31,6 +31,25 @@ graph
         end
     end
 
+    subgraph local [Local Machine]
+        subgraph localcu [Custom Upstream]
+            LocalModules["Contrib modules"]:::repo
+            LocalCustomModules["Custom modules"]:::repo
+            LocalThemes["Contrib themes"]:::repo
+            LocalConfig["Configuration"]:::repo
+        end
+        subgraph localsite1 [Site 1]
+            SiteConfig1[Site Config]:::repo
+            SiteTheme1[Site Theme]:::repo
+        end
+
+        subgraph localsite2 [Site 2]
+            SiteConfig2[Site Config]:::repo
+            SiteTheme2[Site Theme]:::repo
+            SiteModules2[Extra contrib modules]:::repo
+        end
+    end
+
     subgraph ci ["CI System"]
         Workflow1["Build
         Composer, NPM, Gulp, etc."]
@@ -81,19 +100,24 @@ graph
     end
 
     %% Links
+    localcu --> cu
+    cu --> Workflow1
+
+    Workflow1 --> Workflow2 --> Workflow3
+
+    Workflow3 --> EnvIntegration1
+    Workflow3 --> EnvIntegration2 
+    Workflow3 --> EnvIntegration3
+
+    localsite1 -- Local build & commit --> EnvDev1
+    localsite2 -- Local build & commit --> EnvDev2
+
     EnvIntegration1 -- Integrated Composer --> EnvDev1 -- Integrated Composer --> EnvTest1 -- Integrated Composer --> EnvLive1
     
     EnvIntegration2 -- Integrated Composer --> EnvDev2 -- Integrated Composer --> EnvTest2 -- Integrated Composer --> EnvLive2
     
     EnvIntegration3 -- Integrated Composer --> EnvDev3 -- Integrated Composer --> EnvTest3 -- Integrated Composer --> EnvLive3
 
-    Workflow1 --> Workflow2 --> Workflow3
-
-    cu --> Workflow1
-
-    Workflow3 --> EnvIntegration1
-    Workflow3 --> EnvIntegration2 
-    Workflow3 --> EnvIntegration3
 
     %% Styles
     style cu fill:#00A0D2,color:#FFF
