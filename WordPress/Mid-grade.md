@@ -82,9 +82,7 @@ graph LR
 ```mermaid
 ---
 title: Code deployment activity diagram
-
 ---
-%%{init:{mirrorActors: false}}%%
 sequenceDiagram
 
     % People & Systems
@@ -125,5 +123,31 @@ sequenceDiagram
             Note over S2: Site 2 goes through its deployment process
         end
     end
+
+```
+
+### Integrated Composer
+
+At its most simple, it runs `composer install` command when you push code to the Pantheon platform.
+
+You can use it to define some system attributes and to run various PHP-specific build tasks (using composer hooks).
+
+```mermaid
+---
+title: Code deployment activity diagram
+---
+sequenceDiagram
+
+    % People & Systems
+    actor User as Developer
+    participant IC as Integrated Composer
+    participant Dev as Dev Environment
+    participant Test as Test Environment
+    participant Live as Live Environment
+
+    % Actions
+
+    User --> Dev: Push code updates
+    
 
 ```
