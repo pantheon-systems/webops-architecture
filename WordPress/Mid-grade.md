@@ -8,11 +8,15 @@ In this setup, the company has
 - The custom upstream has their standard custom theme and suite of plugins that all sites use
 - The canary site uses the custom upstream "as-is". It's used for testing changes to the upstream before releasing it to the rest of the sites.
 - Each site uses the theme and plugins from the upstream. They can also include a child theme and other plugins that they specifically need.
+- A core developer team maintains the upstream and common codebase.
+- Individual sites can be maintained by more developers that should have more limited access.
 
 Useful for
 
-- Teams with a few developers
-- The team maintains several websites that all share a common codebase
+- Teams with several developers
+- Teams with developers at varying skillsets
+- Teams that want to restrict some of their developers to a subset of the sites maintained
+- Sites all share a common codebase but individual sites maintain their own plugins and theme.
 
 @todo
 
