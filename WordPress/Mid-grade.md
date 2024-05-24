@@ -140,7 +140,7 @@ sequenceDiagram
 
 ```
 
-### Custom Upstream Code Structure
+### Example Custom Upstream Code Structure
 
 | Plugin / Theme | Managed Source |
 |----------------|----------------|
@@ -305,7 +305,7 @@ sequenceDiagram
     end
 ```
 
-### Monorepo Code Structure
+### Example Monorepo Code Structure
 
 | Plugin / Theme | Managed Source | Used By   |
 |----------------|----------------|-----------|
