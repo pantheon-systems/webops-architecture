@@ -1,0 +1,156 @@
+name: Deploy to Pantheon
+on:
+  push:
+    branches: 
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  configure_env:
+    name: Configure environment and Terminus
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore ssh config cache
+        id: restore-ssh-config
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ssh
+          key: ${{ runner.os }}-config-${{ github.run_id }}
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+
+      - name: Install Terminus
+        uses: pantheon-systems/terminus-github-actions@main
+        with:
+          pantheon-machine-token: ${{ secrets.TERMINUS_TOKEN }}
+
+      - name: Create SSH key & add to Pantheon
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keygen -m PEM -t rsa -b 4096 -N '' -C 'CI+deployment+${{ github.run_id }}' -f ~/.ssh/pantheon
+          terminus ssh-key:add ~/.ssh/pantheon.pub
+
+      - name: Save ssh config to cache
+        id: save-ssh-config
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ssh
+          key: ${{ runner.os }}-config-${{ github.run_id }}
+
+  identify_sites:
+    runs-on: ubuntu-latest
+    needs: configure_env
+    outputs:
+      sites: ${{ steps.findSites.outputs.sites }}
+    steps:
+      - name: Restore ssh config cache
+        id: restore-ssh-config
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ssh
+          key: ${{ runner.os }}-config-${{ github.run_id }}
+
+      - name: Install Terminus
+        uses: pantheon-systems/terminus-github-actions@main
+        with:
+          pantheon-machine-token: ${{ secrets.TERMINUS_TOKEN }}
+
+
+  deploy_to_pantheon:
+    runs-on: ubuntu-latest
+    needs: [ identify_sites, configure_env ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore ssh config cache
+        id: restore-ssh-config
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ssh
+          key: ${{ runner.os }}-config-${{ github.run_id }}
+
+      - name: Install Terminus
+        uses: pantheon-systems/terminus-github-actions@v1
+        with:
+          pantheon-machine-token: ${{ secrets.TERMINUS_TOKEN }}
+
+      - name: Determine target environment for deploy
+        run: |
+          # Identify environment based on branch name
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Use the PR number as the environment name
+            env=$(echo ${{ github.ref_name }} | sed 's|^\([0-9]*\)/.*|pr-\1|')
+          else
+            # Use the branch name as the environment name
+            env=${{ github.ref_name }}
+          fi
+          if [ "$env" == "main" ]; then
+            env="dev"
+          fi
+
+          # Ensure environment name is 11 characters or less and has no special characters    
+          env="${env:0:11}"
+          env=$(echo "$env" | sed 's/[^a-zA-Z0-9]/-/g')
+
+          # Export environment name
+          echo "env=$env" >> $GITHUB_ENV
+
+      - name: Ensure environment exists and is in git mode
+        run: |
+          # Create multidev environment if it doesn't exist
+          if ! terminus env:list ${{ vars.SITE_NAME }} --field=ID | grep $env; then
+            terminus env:create ${{ vars.SITE_NAME }}.live $env
+          fi
+
+          # Ensure environment is in git mode
+          terminus connection:set ${{ vars.SITE_NAME }}.$env git
+
+      - name: Push branch to Pantheon
+        run: |
+          curr_branch=$( git branch --show-current )
+          # The dev environment is always based on the master branch
+          dest_branch=$( [ "$env" == "dev" ] && echo "master" || echo "$env" )
+
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            git checkout ${{ github.head_ref }}
+          fi
+
+          # Configure git to use the SSH key and avoid host key checking
+          git config --local core.sshCommand 'ssh -i ~/.ssh/pantheon -o StrictHostKeyChecking=no'
+          git config --local user.email "gh-actions@pantheon.io"
+          git config --local user.name "GitHub Actions"
+          
+          git remote add pantheon $(terminus connection:info ${{ vars.SITE_NAME }}.$env --field=git_url)
+          git fetch pantheon
+          git checkout -b $dest_branch
+          git pull pantheon $dest_branch --rebase
+          git status
+          git push pantheon $dest_branch
+
+  spin_down:
+    name: Spin down
+    needs: deploy_to_pantheon
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore ssh config cache
+        id: restore-ssh-config
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ssh
+          key: ${{ runner.os }}-config-${{ github.run_id }}
+
+      - name: Install Terminus
+        uses: pantheon-systems/terminus-github-actions@main
+        with:
+          pantheon-machine-token: ${{ secrets.TERMINUS_TOKEN }}
+
+      - name: Remove SSH key from Pantheon
+        run: terminus ssh-key:remove "$( terminus ssh-key:list --field=id --filter="comment=CI+deployment+${{ github.run_id }}" )"
