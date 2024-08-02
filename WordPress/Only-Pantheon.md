@@ -1,4 +1,4 @@
-# Basic workflows on Pantheon
+# Simple workflows using only the Pantheon framework
 
 ## Ongoing changes in Dev environment only
 
@@ -34,9 +34,9 @@ Autopilot will update all plugins and the upstream (WordPress Core) on a regular
 ```mermaid
 graph TD
     User["fab:fa-user Solo Developer"] == SFTP\n Ongoing Changes ==> EnvDev("fas:fa-bolt Dev Environment")
-	User["fab:fa-user Solo Developer"] == SFTP\n Feature Development ==> EnvMulti("fas:fa-bolt Multi-dev Environment")
-	EnvMulti == Commit changes ==> FeatA([New Feature])
-	FeatA == Merge changes ==> EnvDev
+    User["fab:fa-user Solo Developer"] == SFTP\n Feature Development ==> EnvMulti("fas:fa-bolt Multi-dev Environment")
+    EnvMulti == Commit changes ==> FeatA([New Feature])
+    FeatA == Merge changes ==> EnvDev
     Upstream["Pantheon Default Upstream"] -- WordPress core updates --> AutoPilot["Autopilot"]
     AutoPilot -. Weekly Update .-> EnvDev
     EnvDev == Deploy to test ==> EnvTest("fas:fa-bolt Test Environment")
@@ -61,7 +61,7 @@ Autopilot will update plugins and the upstream (WordPress Core) on a regular bas
 ```mermaid
 graph TD
     UserA["fab:fa-user 1st Developer"] == SFTP ==> EnvMultiA("fas:fa-bolt Multidev Environment")
-	UserB["fab:fa-user 2nd Developer"] == SFTP ==> EnvMultiB("fas:fa-bolt Multidev Environment")
+    UserB["fab:fa-user 2nd Developer"] == SFTP ==> EnvMultiB("fas:fa-bolt Multidev Environment")
     EnvMultiA == Merge when ready ==> EnvDev("fas:fa-bolt Dev Environment")
     EnvMultiB == Merge when ready ==> EnvDev
     Upstream["Pantheon Default Upstream"] -- Dashboard updates --> AutoPilot["Autopilot"]

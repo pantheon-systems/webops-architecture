@@ -1,6 +1,8 @@
-# Advanced Workflows
+# Federated Codebase
 
-## Fully CI controlled
+A federated codebase refers to one in which there's no controlling upstream that dictates the code used by individual sites. Instead, your organization maintains a collection of plugins, themes, and other features - each of which is maintained seperately. Individual sites can "pick and choose" between the available packages to use the ones that they need.
+
+This model gives a high level of control to individual sites, with the parent organization providing options rather than dictating a particular set of packages.
 
 Ideal for teams that
 
@@ -18,12 +20,15 @@ Major elements of this setup
 - The site repos may just be the composer.json file and a few other config files
 - CircleCI does all the heavy lifting moving code around
 
+## High level dependency mapping
+
 ```mermaid
 ---
 title: Dependency chart
 ---
-graph LR
+flowchart TD
     subgraph contrib [Contributed]
+        Contrib0["WP Core"]
         Contrib1["Yoast"]
         Contrib2["WooCommerce"]
         Contrib3["Gravity Forms"]
@@ -36,6 +41,7 @@ graph LR
             Custom2["Custom integration plugin"]:::repo
             Custom3["Custom forms plugin"]:::repo
             Custom4["Custom theme"]:::repo
+            Custom5["Shared CI scripts"]:::repo
         end
         SiteCode1["Site 1"]:::repo
         SiteCode2["Site 2"]:::repo
@@ -109,7 +115,52 @@ graph LR
 
 ```
 
-### Activity Diagram showing how changes move through the systems
+## Process for releasing a new version of a custom theme
+
+```mermaid
+---
+title: Add new feature to analytics plugin
+
+---
+%%{init:{mirrorActors: false}}%%
+sequenceDiagram
+
+    % People & Systems
+    actor Dev as Developer
+    participant Theme as Custom Theme Repo
+    participant CI as CI/CD System
+
+    % Actions
+
+    rect rgb(184,192,64)
+        Note over Dev,CI: Create new version of theme
+        activate Dev
+        Dev->>Dev: Code new features in local
+        Dev->>Theme: Make PR
+        deactivate Dev
+
+        Theme->>CI: Trigger testing workflow
+        activate CI
+        CI-->Theme: Report success
+        deactivate CI
+
+        activate Theme
+        Theme-->Theme: Code review
+        Theme-->Theme: Release a new version
+        Theme->>CI: Trigger release workflow
+        deactivate Theme
+
+        activate CI
+        CI-->CI: Compile CSS and JS
+        CI->>Theme: Provide compiled & packaged code
+        deactivate CI
+
+        Note over Theme: Latest theme version is now available to sites
+    end
+
+```
+
+## Process for updating plugins on a site
 
 ```mermaid
 ---
@@ -121,7 +172,6 @@ sequenceDiagram
 
     % People & Systems
     participant Contrib as WPPackagist
-    actor Dev as Developer
     participant Plugin as Analytics Plugin Repo
     participant Site as Site Repo
     participant CI as CircleCI
@@ -131,31 +181,7 @@ sequenceDiagram
 
     % Actions
 
-    rect rgb(184,192,64)
-        Note over Dev,CI: Create new version of plugin
-        activate Dev
-        Dev->>Dev: Code new features in local
-        Dev->>Plugin: Make PR
-        deactivate Dev
-
-        Plugin->>CI: Trigger testing workflow
-        activate CI
-        CI-->Plugin: Report success
-        deactivate CI
-
-        activate Plugin
-        Plugin-->Plugin: Code review
-        Plugin-->Plugin: Release a new version
-        Plugin->>CI: Trigger release workflow
-        deactivate Plugin
-
-        activate CI
-        CI-->Plugin: Provide compiled & packaged code
-        deactivate CI
-    end
-
     rect rgb(64,120,192)
-        Note over Plugin,EnvLive: Update plugin on site
         activate Site
         Note over Site: Either scheduled update or manual trigger
         Site->>CI: Trigger deploy workflow
@@ -194,4 +220,67 @@ sequenceDiagram
         deactivate EnvTest
     end
 
+```
+
+## Example composer.json for a custom package
+
+You'll need to include a composer.json file to make a repo available for other sites to install. This is an example of what that would look like for a custom parent theme.
+
+```json
+{
+    "name": "my-organization/theme",
+    "version": "1.0.0",
+    "description": "Common parent theme for my-organization",
+    "type": "wordpress-theme",
+    "require": {
+        "composer/installers": "~2.0"
+    }
+}
+```
+
+## Example composer.json for a single site
+
+This is an example composer.json file for a WordPress site. It installs the Bedrock version of WordPress core, some required Pantheon packages, a few plugins from the WordPress plugins repo, and the orgnaization's custom parent theme.
+
+```json
+{
+    "name": "my-organization/shopping-site",
+    "description": "Online store repository",
+    "type": "project",
+    "repositories": {
+        "wpackagist": {
+            "type": "composer",
+            "url":"https://wpackagist.org",
+            "only": [
+                "wpackagist-plugin/*",
+                "wpackagist-theme/*"
+            ]
+        },
+        "my-org-theme": {
+            "type": "github",
+            "url": "git@github.com:my-organization/theme"
+        }
+    },
+    "require": {
+        "php": ">=8.0",
+        "vlucas/phpdotenv": "^5.5",
+        "oscarotero/env": "^2.1",
+        "pantheon-systems/pantheon-mu-plugin": "*",
+        "roots/bedrock-autoloader": "*",
+        "roots/bedrock-disallow-indexing": "*",
+        "roots/wordpress": "*",
+        "roots/wp-config": "*",
+        "roots/wp-password-bcrypt": "*",
+        "wpackagist-plugin/akismet": "^5.3",
+        "wpackagist-plugin/wordpress-seo": "^23.1",
+        "wpackagist-plugin/woocommerce": "^9.1",
+        "wpackagist-theme/twentytwentytwo": "^1.2",
+        "my-organization/theme": "^1.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true
+        }
+    }
+}
 ```

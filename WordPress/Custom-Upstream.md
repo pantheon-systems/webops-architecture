@@ -1,4 +1,4 @@
-# Mid-level complexity workflows
+# Workflows that use custom upstreams
 
 ## Custom Upstream Setup
 
