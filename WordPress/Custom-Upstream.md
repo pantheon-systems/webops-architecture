@@ -1,6 +1,6 @@
 # Workflows that use custom upstreams
 
-## Custom Upstream Setup
+## Minimal Custom Upstream
 
 In this setup, the company has
 
@@ -22,7 +22,7 @@ Useful for
 
 - Canary diagram using multidevs on sites that are tagged with canary tag
 
-### Custom Upstream Diagrams
+### Dependencies in a minimal setup
 
 ```mermaid
 ---
@@ -32,17 +32,20 @@ graph
     UpstreamPantheon["Pantheon Upstream"]:::repo
 
     subgraph github [GitHub]
-        UpstreamCustom["Custom Upstream\nWith custom theme, plugins"]:::repo
+        UpstreamCustom["Custom Upstream\nWith parent theme, custom plugins"]:::repo
     end
 
     subgraph pantheon [Pantheon]
         subgraph site0 [Canary Site]
             direction LR
-            EnvDev0(Multidev Environment):::env
+            EnvMD0(Multidev Environment):::env
+            EnvDev0(Dev Environment):::env
         end
 
         subgraph site1 [Site 1]
             direction LR
+            SitePlugins1(Site-specific plugins):::note
+            SiteTheme1(Child theme):::note
             EnvDev1(Dev Environment):::env
             EnvTest1(Test Environment):::env
             EnvLive1(Live Environment):::env
@@ -50,6 +53,8 @@ graph
 
         subgraph site2 [Site 2]
             direction LR
+            SitePlugins2(Site-specific plugins):::note
+            SiteTheme2(Child theme):::note
             EnvDev2(Dev Environment):::env
             EnvTest2(Test Environment):::env
             EnvLive2(Live Environment):::env
@@ -57,6 +62,8 @@ graph
 
         subgraph site3 [Site 3]
             direction LR
+            SitePlugins3(Site-specific plugins):::note
+            SiteTheme3(Child theme):::note
             EnvDev3(Dev Environment):::env
             EnvTest3(Test Environment):::env
             EnvLive3(Live Environment):::env
@@ -67,10 +74,15 @@ graph
     
     UpstreamPantheon --> UpstreamCustom
 
-    UpstreamCustom -- Feature branch --> EnvDev0
+    UpstreamCustom -- Feature branch --> EnvMD0
+    UpstreamCustom -- Canary branch --> EnvDev0
     UpstreamCustom -- Master branch --> EnvDev1
     UpstreamCustom -- Master Branch --> EnvDev2
     UpstreamCustom -- Master Branch --> EnvDev3
+
+    SitePlugins1 ~~~ SiteTheme1
+    SitePlugins2 ~~~ SiteTheme2
+    SitePlugins3 ~~~ SiteTheme3
 
     EnvDev1 --> EnvTest1
     EnvTest1 --> EnvLive1
@@ -84,6 +96,7 @@ graph
     %% Styles
     style github fill:#4078c0,color:#FFF
     style pantheon fill:#181D21,color:#FFF
+    style note fill:#CCC,color:#000
     style site0 fill:#78868E,color:#000
     style site1 fill:#78868E,color:#000
     style site2 fill:#78868E,color:#000
@@ -93,33 +106,28 @@ graph
 
 ```
 
+### Processes for deploying code changes in a minimal setup
+
 ```mermaid
 ---
-title: Code deployment activity diagram
+title: Deploying a new feature to all sites
 ---
 sequenceDiagram
 
     % People & Systems
     actor Dev as Developer
-    participant PU as Pantheon Upstream
     participant CU as Custom Upstream
     participant S0 as Canary Site
     participant S1 as Site 1
     participant S2 as Site 2
+    participant S3 as Site 3
 
     % Actions
 
     rect rgb(184,192,64)
-        Note over Dev,CU: General Development Phase
-        PU->>CU: WP Core update
+        Note over Dev,CU: Development Phase
         Dev->>Dev: Code new features in local
-        Dev->>CU: Dev creates a feature for all sites
-    end
-
-    rect rgb(184,192,64)
-        Note over Dev,S2: Custom Development Phase
-        Dev->>Dev: Code new features in local
-        Dev->>S2: Dev creates a feature just for Site 2
+        Dev->>CU: Push changes to feature branch
     end
 
     rect rgb(64,120,192)
@@ -128,14 +136,97 @@ sequenceDiagram
         S0->>-CU: Testing passed
     end
     rect rgb(192,72,64)
-        Note over CU,S2: Deployment Phase
+        Note over CU,S3: Deployment Phase
+        CU->>CU: Merge feature in to master branch
         par Deploying to Site 1
-            CU->>S1: Deploy to Site 1
+            CU->>S1: Site 1 pulls in upstream updates
             Note over S1: Site 1 goes through its deployment process
         and Deploying to Site 2
-            CU->>S2: Deploy to Site 2
+            CU->>S2: Site 2 pulls in upstream updates
             Note over S2: Site 2 goes through its deployment process
+        and Deploying to Site 3
+            CU->>S2: Site 3 pulls in upstream updates
+            Note over S3: Site 3 goes through its deployment process
         end
+    end
+
+```
+
+```mermaid
+---
+title: Updating WordPress core
+---
+sequenceDiagram
+
+    % People & Systems
+    participant PU as Pantheon Upstream
+    participant CU as Custom Upstream
+    participant S0 as Canary Site
+    participant S1 as Site 1
+    participant S2 as Site 2
+    participant S3 as Site 3
+
+    % Actions
+
+    rect rgb(184,192,64)
+        Note over PU,CU: General Development Phase
+        PU->>PU: New verison of WordPress Core
+        PU->>CU: Merge latest updates into Custom Upstream
+    end
+
+    rect rgb(64,120,192)
+        Note over CU,S0: Testing Phase
+        CU->>+S0: Deploy for testing
+        S0->>-CU: Testing passed
+    end
+
+    rect rgb(192,72,64)
+        Note over CU,S3: Deployment Phase
+        par Deploying to Site 1
+            CU->>S1: Site 1 pulls in upstream updates
+            Note over S1: Site 1 goes through its deployment process
+        and Deploying to Site 2
+            CU->>S2: Site 2 pulls in upstream updates
+            Note over S2: Site 2 goes through its deployment process
+        and Deploying to Site 3
+            CU->>S3: Site 3 pulls in upstream updates
+            Note over S3: Site 3 goes through its deployment process
+        end
+    end
+
+```
+
+```mermaid
+---
+title: Creating a feature for a single site 
+---
+sequenceDiagram
+
+    % People & Systems
+    actor Dev as Developer
+    participant S1MD as Site 1 Multidev
+    participant S1DEV as Site 1 Dev
+    participant S1TEST as Site 1 Test
+    participant S1LIVE as Site 1 Live
+
+    % Actions
+
+    rect rgb(184,192,64)
+        Note over Dev,S1MD: Development Phase
+        Dev->>Dev: Code new features in local copy of Site 1
+        Dev->>S1MD: Push changes to a multidev for testing
+    end
+
+    rect rgb(64,120,192)
+        Note over S1MD,S1DEV: Testing Phase
+        S1MD->>S1MD: Testing in multidev
+        S1MD->>S1DEV: Testing passed, merge to Dev
+    end
+
+    rect rgb(192,72,64)
+        Note over S1DEV,S1LIVE: Deployment Phase
+        S1DEV->>S1TEST: Deploy to test, final UAT
+        S1TEST->>S1LIVE: Deploy to live
     end
 
 ```
@@ -176,7 +267,7 @@ Useful for
 - Teams with a few developers
 - The team maintains a very large number of sites that run a very similar codebase
 
-### Monorepo Diagrams
+### Dependencies in a Monorepo setup
 
 ```mermaid
 ---
@@ -186,7 +277,7 @@ graph
     UpstreamPantheon["Pantheon Upstream"]:::repo
 
     subgraph github [GitHub]
-        UpstreamCustom["Custom Upstream\nWith custom themes, all plugins"]:::repo
+        UpstreamCustom["Custom Upstream\nWith parent theme, all child themes, all plugins"]:::repo
     end
 
     subgraph pantheon [Pantheon]
@@ -247,60 +338,126 @@ graph
 
 ```
 
+### Processes for deploying code changes in a monorepo setup
+
 ```mermaid
 ---
-title: Code deployment activity diagram
+title: Release a feature for all sites
 ---
 sequenceDiagram
 
     % People & Systems
     actor Dev as Developer
+    participant CU as Custom Upstream
+    participant S0 as Canary Site
+    participant S1 as Site 1
+    participant S2 as Site 2
+    participant S3 as Site 3
+
+    % Actions
+
+    rect rgb(184,192,64)
+        Note over Dev,CU: Development Phase
+        Dev->>Dev: Code new features in local
+        Dev->>CU: Dev pushes to a feature branch in the upstream
+    end
+
+    rect rgb(64,120,192)
+        Note over CU,S0: Testing Phase
+        CU->>+S0: Deploy for testing
+        S0->>-CU: Testing passed
+    end
+
+    rect rgb(192,72,64)
+        Note over CU,S3: Deployment Phase
+        par CU to S1
+            CU->>S1: Deploy to Site 1
+            Note over S1: Site 1 goes through its deployment process
+        and CU to S2
+            CU->>S2: Deploy to Site 2
+            Note over S2: Site 2 goes through its deployment process
+        and CU to S3
+            CU->>S3: Deploy to Site 3
+            Note over S3: Site 3 goes through its deployment process
+        end
+    end
+```
+
+```mermaid
+---
+title: WordPress Core Update
+---
+sequenceDiagram
+
+    % People & Systems
     participant PU as Pantheon Upstream
     participant CU as Custom Upstream
     participant S0 as Canary Site
     participant S1 as Site 1
     participant S2 as Site 2
+    participant S3 as Site 3
 
     % Actions
 
     rect rgb(184,192,64)
-        Note over Dev,CU: New Feature for all sites
-        PU->>CU: WP Core update
-        Dev->>Dev: Code new features in local
-        Dev->>CU: Dev creates a feature for all sites
-
-        rect rgb(64,120,192)
-            Note over CU,S0: Testing Phase
-            CU->>+S0: Deploy for testing
-            S0->>-CU: Testing passed
-        end
-
-        rect rgb(192,72,64)
-            Note over CU,S2: Deployment Phase
-            par CU to S1
-                CU->>S1: Deploy to Site 1
-                Note over S1: Site 1 goes through its deployment process
-            and CU to S2
-                CU->>S2: Deploy to Site 2
-                Note over S2: Site 2 goes through its deployment process
-            end
-        end
+        Note over PU,CU: Updates Phase
+        PU->>PU: New version of WordPress Core released
+        PU->>CU: Merge updates into Custom Upstream
     end
 
-    rect rgb(184,192,64)
-        Note over Dev,S2: New Feature for one site
-        Dev->>Dev: Code new features in local
-        Dev->>CU: Dev creates a feature just for Site 1. 
+    rect rgb(64,120,192)
+        Note over CU,S0: Testing Phase
+        CU->>+S0: Deploy for testing
+        S0->>-CU: Testing passed
+    end
 
-        rect rgb(192,72,64)
-            Note over CU,S2: Deployment Phase
-            par CU to S1
-                CU->>S1: Deploy to Site 1
-                Note over S1: Site 1 goes through its deployment process. Site 1 uses the change.
-            and CU to S2
-                CU->>S2: Deploy to Site 2
-                Note over S2: Site 2 goes through its deployment process. Site 2 ignores the code.
-            end
+    rect rgb(192,72,64)
+        Note over CU,S3: Deployment Phase
+        par CU to S1
+            CU->>S1: Deploy to Site 1
+            Note over S1: Site 1 goes through its deployment process
+        and CU to S2
+            CU->>S2: Deploy to Site 2
+            Note over S2: Site 2 goes through its deployment process
+        and CU to S3
+            CU->>S3: Deploy to Site 3
+            Note over S3: Site 3 goes through its deployment process
+        end
+    end
+```
+
+```mermaid
+---
+title: Release a feature for a single site
+---
+sequenceDiagram
+
+    % People & Systems
+    actor Dev as Developer
+    participant CU as Custom Upstream
+    participant S0 as Canary Site
+    participant S1 as Site 1
+    participant S2 as Site 2
+    participant S3 as Site 3
+
+    % Actions
+    rect rgb(184,192,64)
+        Note over Dev,CU: Development Phase
+        Dev->>Dev: Code new feature in local
+        Dev->>CU: Add the feature into the custom upstream
+    end
+
+    rect rgb(192,72,64)
+        Note over CU,S3: Deployment Phase
+        par CU to S1
+            CU->>S1: Deploy to Site 1
+            Note over S1: Site 1 goes through its deployment process. Site 1 uses the feature.
+        and CU to S2
+            CU->>S2: Deploy to Site 2
+            Note over S2: Site 2 goes through its deployment process. Site 2 ignores the feature.
+        and CU to S3
+            CU->>S3: Deploy to Site 3
+            Note over S3: Site 3 goes through its deployment process. Site 3 ignores the feature.
         end
     end
 ```
