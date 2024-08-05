@@ -10,6 +10,6 @@
 
 ## WordPress
 
-- [Basic workflows for single developers and small teams](WordPress/Basic.md)
-- [Mid-grade workflows for more complex scenarios](WordPress/Mid-grade.md)
-- [Advanced workflows for highly advanced setups](WordPress/Advanced.md)
+- [Basic workflows for single developers and small teams](WordPress/Only-Pantheon.md)
+- [Custom Upstream for many simple sites](WordPress/Custom-Upstream.md)
+- [Federated Codebase for many complex sites](WordPress/Federated-Codebase.md)
